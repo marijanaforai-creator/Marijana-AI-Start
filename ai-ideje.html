@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Ideje · Marijana AI Start</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .page { max-width: 900px; margin: 0 auto; padding: 48px 20px 80px; }
+    .back { color: var(--muted); text-decoration: none; font-size: 14px; }
+    .panel { margin-top: 32px; padding: 30px; border: 1px solid var(--line); background: rgba(255,255,255,.42); }
+    label { display:block; margin: 0 0 8px; font-size: 13px; font-weight:700; }
+    textarea, input, select {
+      width:100%; padding:14px 15px; margin-bottom:20px; border:1px solid var(--line);
+      background:#fffdf8; color:var(--black); font:inherit; border-radius:4px;
+    }
+    textarea { min-height:120px; resize:vertical; }
+    .generate {
+      border:0; padding:15px 22px; background:var(--black); color:white; cursor:pointer;
+      font:inherit; font-weight:700; border-radius:4px;
+    }
+    .result { margin-top:30px; display:none; }
+    .idea { padding:18px 0; border-bottom:1px solid var(--line); }
+    .idea h3 { margin:0 0 7px; font-family:"Cormorant Garamond",Georgia,serif; font-size:25px; }
+    .idea p { margin:0; color:var(--muted); line-height:1.6; }
+    .status { margin-top:15px; color:var(--sage); font-size:13px; }
+  </style>
+</head>
+<body>
+<main class="page">
+  <a class="back" href="index.html">← Nazad na Marijana AI Start</a>
+  <header class="hero">
+    <span class="eyebrow">01 · MARIJANA AI START</span>
+    <h1>AI Ideje</h1>
+    <p>Od praznog ekrana do konkretnih ideja za sadržaj, ponudu ili digitalni proizvod.</p>
+  </header>
+
+  <section class="panel">
+    <label for="topic">Čime se baviš ili šta želiš da napraviš?</label>
+    <textarea id="topic" placeholder="Npr. pravim digitalne proizvode za žene koje žele da pokrenu online biznis..."></textarea>
+
+    <label for="audience">Kome je namenjeno?</label>
+    <input id="audience" placeholder="Npr. početnicima u online biznisu">
+
+    <label for="goal">Šta želiš da postigneš?</label>
+    <select id="goal">
+      <option value="sadržaj">Ideje za sadržaj</option>
+      <option value="proizvod">Ideje za digitalne proizvode</option>
+      <option value="uslugu">Ideje za usluge</option>
+      <option value="ponudu">Ideje za ponude</option>
+    </select>
+
+    <button class="generate" id="generate">✨ Generiši ideje</button>
+    <div class="status" id="status"></div>
+  </section>
+
+  <section class="panel result" id="result">
+    <span class="eyebrow">REZULTAT</span>
+    <h2>Predložene ideje</h2>
+    <div id="ideas"></div>
+  </section>
+</main>
+
+<script>
+const button=document.getElementById('generate');
+const status=document.getElementById('status');
+const result=document.getElementById('result');
+const ideas=document.getElementById('ideas');
+
+button.addEventListener('click', async ()=>{
+  const topic=document.getElementById('topic').value.trim();
+  const audience=document.getElementById('audience').value.trim();
+  const goal=document.getElementById('goal').value;
+  if(!topic){ status.textContent='Unesi prvo temu ili ono što želiš da napraviš.'; return; }
+
+  button.disabled=true;
+  status.textContent='AI priprema ideje...';
+  result.style.display='none';
+
+  try {
+    const response=await fetch('/api/ideas',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({topic,audience,goal})
+    });
+    if(!response.ok) throw new Error('API greška');
+    const data=await response.json();
+    const list=Array.isArray(data.ideas)?data.ideas:[];
+    ideas.innerHTML=list.map((x,i)=>`<article class="idea"><h3>${i+1}. ${escapeHtml(x.title||'Ideja')}</h3><p>${escapeHtml(x.description||'')}</p></article>`).join('');
+    result.style.display='block';
+    status.textContent='Gotovo.';
+  } catch(e) {
+    status.textContent='Alat još nije povezan sa AI servisom. Interfejs je spreman; sledeći korak je povezivanje API-ja.';
+  } finally { button.disabled=false; }
+});
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
+</script>
+</body>
+</html>
